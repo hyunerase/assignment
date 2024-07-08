@@ -20,10 +20,19 @@ services:
     restart: always
     ports:
       - "80:80"
+      - "443:443"
     depends_on:
       - web
     networks:
       - server
+      
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    restart: unless-stopped
+    volumes:
+      - ./cert/certbot/conf:/etc/letsencrypt 
+      - ./cert/certbot/www:/var/www/certbot
 
 networks:
   server:
