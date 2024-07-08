@@ -12,6 +12,7 @@ class Post(models.Model):
         return self.title
 
 class Comment(models.Model):
+    user = models.ForeignKey(CustomUser, null=True, on_delete=models.CASCADE)
     #related_name 역참조
     post = models.ForeignKey(Post, null=False, on_delete=models.CASCADE, related_name='comments')
     comment = models.TextField(default='')

@@ -1,14 +1,14 @@
 from django.shortcuts import render
 from .models import *
 from .serializers import *
-from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-from django.shortcuts import get_object_or_404
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from .permissions import IsOwnerOrReadOnly
+from rest_framework.views import APIView
+from django.shortcuts import get_object_or_404
 
 # Create your views here.
 @api_view(['GET','POST'])
@@ -20,12 +20,13 @@ def post_list(request):
         serializer = PostSerializer(posts, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     elif request.method == 'POST':
-        serializer = PostResponseSerializer(data=request.data)
+        serializer = PostDetailSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(user=request.user)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(status=status.HTTP_400_BAD_REQUEST)
 
+"""
 @api_view(['GET', 'PUT', 'DELETE'])
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsOwnerOrReadOnly])
@@ -46,6 +47,34 @@ def post_detail(request, pk):
             return Response(status=status.HTTP_204_NO_CONTENT)
     except Post.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
+"""
+#Custom Permission 적용하기 위해 check_object_permissions로 검사하려면 CBV로 바꾸어야함
+class PostDetail(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsOwnerOrReadOnly]
+    def get_object(self, pk):
+        post = get_object_or_404(Post, pk=pk)
+        self.check_object_permissions(self.request, post)
+        return post
+
+    def get(self, request, pk):
+        post = self.get_object(pk)
+        serializer = PostDetailSerializer(post)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request, pk):
+        post = self.get_object(pk)
+        serializer = PostDetailSerializer(post, data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        post = self.get_object(pk)
+        post.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 @api_view(['GET', 'POST'])
 @authentication_classes([JWTAuthentication])
@@ -60,26 +89,35 @@ def comments_list(request, post_id):
         elif request.method == 'POST':
             serializer = CommentRequestSerializer(data=request.data)
             if serializer.is_valid():
-                new_comment = serializer.save(post=post)
-                response = CommentResponseSerializer(new_comment)
+                new_comment = serializer.save(post=post, user=request.user)
+                response = PostDetailSerializer(post)
                 return Response(response.data, status=status.HTTP_201_CREATED)
         return Response(status=status.HTTP_400_BAD_REQUEST)
     except Post.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
+"""
 @api_view(['GET', 'DELETE'])
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsOwnerOrReadOnly])
 def comment_delete(request, post_id, comment_id):
-    if request.method == 'GET':
-        post = Post.objects.get(pk=post_id)
-        comments = Comment.objects.filter(post=post)
-        serializer = CommentResponseSerializer(comments, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    elif request.method == 'DELETE':
+    if request.method == 'DELETE':
         post = Post.objects.get(pk=post_id)
         comments = Comment.objects.filter(post=post)
         serializer = CommentResponseSerializer(comments, many=True)
         comment = Comment.objects.get(pk=comment_id)
+        comment.delete()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+"""
+
+#Custom Permission 적용하기 위해 check_object_permissions로 검사하려면 CBV로 바꾸어야함
+class CommentDelete(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsOwnerOrReadOnly]
+    def delete(self, request, post_id, comment_id):
+        post = Post.objects.get(pk=post_id)
+        comment = Comment.objects.get(pk=comment_id)
+        self.check_object_permissions(self.request, post)
+        serializer = PostDetailSerializer(post)
         comment.delete()
         return Response(serializer.data, status=status.HTTP_200_OK)
