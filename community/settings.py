@@ -112,8 +112,8 @@ REST_FRAMEWORK = {
 
 from datetime import timedelta
 
-#ACCOUNT_EMAIL_VERIFICATION = 'none' 
-#ACCOUNT_EMAIL_REQUIRED = False 
+ACCOUNT_EMAIL_VERIFICATION = 'none' 
+ACCOUNT_EMAIL_REQUIRED = False 
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(hours=1), 
