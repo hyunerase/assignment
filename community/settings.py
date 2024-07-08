@@ -32,7 +32,7 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['port-0-community-lydc4xsn02460fa6.sel5.cloudtype.app','127.0.0.1']
+ALLOWED_HOSTS = []
 
 
 # Application definition
