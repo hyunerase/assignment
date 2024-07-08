@@ -1,7 +1,7 @@
 from rest_framework import permissions
 
 class IsOwnerOrReadOnly(permissions.BasePermission):
-    def has_object_permission(seliew, obj):
+    def has_object_permission(self, request, view, obj):
         #읽기 권한 요청이면 인증여부 상관없이 GET
         if request.method in permissions.SAFE_METHODS:
             return True
